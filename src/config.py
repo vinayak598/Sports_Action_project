@@ -1,0 +1,7 @@
+MODEL_PATH = "../models/yolo11n.pt"
+
+VIDEO_IMGSZ = 350   # 🔥 CPU MAGIC
+LIVE_IMGSZ = 320
+
+CONFIDENCE = 0.35
+LIVE_CONFIDENCE = 0.30
