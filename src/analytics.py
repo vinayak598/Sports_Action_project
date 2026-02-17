@@ -3,6 +3,36 @@ import cv2
 import time
 from config import *
 
+# ================= PREPROCESSING =================
+
+def preprocess_frame(frame):
+
+    # Resize (improves FPS)
+    frame = cv2.resize(frame, (1280, 720))
+
+    # Noise Reduction
+    frame = cv2.medianBlur(frame, 3)
+
+    # Gaussian Blur (stabilizes detection)
+    frame = cv2.GaussianBlur(frame, (3,3), 0)
+
+    # Contrast Enhancement (CLAHE)
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l,a,b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(
+        clipLimit=3.0,
+        tileGridSize=(8,8)
+    )
+
+    cl = clahe.apply(l)
+
+    limg = cv2.merge((cl,a,b))
+    frame = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+    return frame
+
+
 # ---------------- MODELS ----------------
 
 model = YOLO(MODEL_PATH)                 # detection + tracking
@@ -78,6 +108,8 @@ def process_frame(frame, sport="Football", live=False):
 
     imgsz = LIVE_IMGSZ if live else VIDEO_IMGSZ
     conf = LIVE_CONFIDENCE if live else CONFIDENCE
+    # ------------ PREPROCESS ------------
+    frame = preprocess_frame(frame)
 
     # -------- DETECTION --------
     results = model.track(
@@ -93,7 +125,7 @@ def process_frame(frame, sport="Football", live=False):
     # -------- POSE (PARALLEL — NOTHING CHANGED) --------
     pose_results = pose_model(
         frame,
-        imgsz=416,   # ⭐ smaller = faster on CPU
+        imgsz=320,   # ⭐ smaller = faster on CPU
         conf=0.35,
         verbose=False
     )
@@ -206,13 +238,13 @@ def process_frame(frame, sport="Football", live=False):
     if elapsed < HALF_DURATION:
 
         half="FIRST HALF"
-        attack="TEAM B →"
+        attack="TEAM B "
         defend="← TEAM A"
 
     else:
 
         half="SECOND HALF"
-        attack="TEAM A →"
+        attack="TEAM A "
         defend="← TEAM B"
 
     alert="Monitoring Play"
